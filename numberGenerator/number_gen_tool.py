@@ -6,6 +6,8 @@ import sys
 
 from datetime import datetime, timedelta
 from tkinter.messagebox import *
+from tkinter import IntVar
+from tkinter import ttk
 
 if getattr(sys, 'frozen', None):
     base_dir = os.path.join(sys._MEIPASS, 'asserts')
@@ -61,9 +63,9 @@ def calculate_check_digit(code):
     # 计算校验码
     check_digit_num = 31 - (sum_val % 31)
     if check_digit_num > 30:
-        check_digit = 0
-        
-    check_digit = str_chars[check_digit_num]
+        check_digit = '0'
+    else:
+        check_digit = str_chars[check_digit_num]
     
     return check_digit
 
@@ -141,6 +143,28 @@ def generate_bank_card(bank_type):
     
     return bank_card_number
 
+# 根据性别随机生成三位顺序码
+def generate_sequence_code(gender):
+    while True:
+        sequence_code = random.randint(100, 999)
+        
+        if gender == 1:
+            if sequence_code % 2 != 0:
+                break
+        else:
+            if sequence_code % 2 == 0:
+                break
+    
+    return str(sequence_code)
+
+# 验证输入的日期字符串格式是否正确
+def validate_date(date_string):
+    try:
+        datetime.strptime(date_string, "%Y%m%d")
+        return True
+    except ValueError:
+        return False
+
 class numberGen:
     def show_ui(self, root):
         self.root = root
@@ -152,18 +176,29 @@ class numberGen:
         link.grid(row=0, column=0, sticky='W', padx=3, pady=3, columnspan=3)
 
         lotto = tk.Label(root, text=self.lotto, fg="red")
-        lotto.grid(row=0, column=3, sticky='W', padx=3, pady=3, columnspan=3)
+        lotto.grid(row=0, column=2, sticky='W', padx=3, pady=3, columnspan=3)
 
         self.entries = []
+
+        self.gender = IntVar()        
+        tk.Label(root, text="性别：").grid(row=1, column=0, sticky='W', padx=3, pady=3)
+        tk.Radiobutton(root, text="男", variable=self.gender, value=1).grid(row=1, column=1, padx=3, pady=3)
+        tk.Radiobutton(root, text="女", variable=self.gender, value=0).grid(row=1, column=2, padx=3, pady=3)
+
+        tk.Label(root, text="出生日期：").grid(row=2, column=0, sticky='W', padx=3, pady=3)
+        self.birth_date_var = tk.StringVar()
+        self.birth_date_entry = tk.Entry(root, width=20)
+        self.birth_date_entry.grid(row=2, column=1, padx=3, pady=3)
+        self.entries.append(self.birth_date_entry)
 
         # 创建标签和输入框
         labels = ['姓名:', '手机号:', '身份证号:', '公司名称:', '统一社会信用代码:', '组织机构代码:', '中征码:', '中国银行卡号: ', '建设银行卡号: ', '农业银行卡号: ', '工商银行卡号: ', '邮储银行卡号: ']
         entries_names = ['ename', 'ephone', 'eidn', 'ecompanyname', 'ecreditcode', 'eorgancode', 'epbccode', 'boccode', 'ccbcode', 'abccode', 'icbccode', 'psbccode']
 
         for i, (label_text, entry_name) in enumerate(zip(labels, entries_names)):
-            tk.Label(root, text=label_text).grid(row=i + 1, column=0, padx=3, pady=3, sticky='W')
+            tk.Label(root, text=label_text).grid(row=i + 3, column=0, padx=3, pady=3, sticky='W')
             entry = tk.Entry(root, width=20)
-            entry.grid(row=i + 1, column=1, padx=3, pady=3)
+            entry.grid(row=i + 3, column=1, padx=3, pady=3)
             setattr(self, entry_name, entry)
             self.entries.append(entry)
 
@@ -184,14 +219,14 @@ class numberGen:
         ]
 
         for i, (gen_command, entry_name) in enumerate(buttons):
-            self.create_buttons(root, i + 1, gen_command, getattr(self, entry_name))
+            self.create_buttons(root, i + 3, gen_command, getattr(self, entry_name))
 
-        tk.Button(root, text=u'生成', width=15, command=self.generatorAll).grid(row=20, column=0, padx=3, pady=3)
-        tk.Button(root, text=u'重置', width=15, command=self.resetAll).grid(row=20, column=1, padx=3, pady=3)
+        ttk.Button(root, text=u'生成', width=15, command=self.generatorAll).grid(row=20, column=0, padx=3, pady=3)
+        ttk.Button(root, text=u'重置', width=15, command=self.resetAll).grid(row=20, column=1, padx=3, pady=3)
 
     def create_buttons(self, root, row, gen_command, entry):
-        tk.Button(root, text='生成', command=gen_command).grid(row=row, column=2, padx=3, pady=3)
-        tk.Button(root, text='复制', command=lambda: self.copy_to_clipboard(entry.get())).grid(row=row, column=3, padx=3, pady=3)
+        ttk.Button(root, text='生成', command=gen_command).grid(row=row, column=2, padx=3, pady=3)
+        ttk.Button(root, text='复制', command=lambda: self.copy_to_clipboard(entry.get())).grid(row=row, column=3, padx=3, pady=3)
 
     # 姓名
     def random_name(self):
@@ -239,7 +274,7 @@ class numberGen:
         # 随机生成姓氏
         name_xing = random.choice(name_xing_all)
         # 随机生成性别
-        sex = random.choice([0, 1])
+        sex = self.gender.get() if self.gender.get() in [0, 1] else random.choice([0, 1])
 
         if sex == 0:
             # 女性
@@ -266,10 +301,13 @@ class numberGen:
         region_code = random.choice(lines)
         
         # 随机生成一个有效的出生日期
-        birth_date = generate_random_date()
+        if (validate_date(self.birth_date_entry.get())):
+            birth_date = self.birth_date_entry.get()
+        else:
+            birth_date = generate_random_date()
         
         # 随机生成后三位顺序码
-        sequence_code = str(random.randint(100, 999))
+        sequence_code = generate_sequence_code(self.gender.get())
         
         # 拼接前17位
         id_number_17 = region_code + birth_date + sequence_code
