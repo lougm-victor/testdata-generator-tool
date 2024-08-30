@@ -3,11 +3,19 @@ import random
 import tkinter as tk
 import os
 import sys
+import PIL.Image as PImage
+import threading
+import cv2
+import numpy
 
 from datetime import datetime, timedelta
 from tkinter.messagebox import *
 from tkinter import IntVar
 from tkinter import ttk
+from PIL import ImageFont, ImageDraw
+
+from numberGenerator import loading_alert
+from numberGenerator import lotto_generator
 
 if getattr(sys, 'frozen', None):
     base_dir = os.path.join(sys._MEIPASS, 'asserts')
@@ -165,6 +173,37 @@ def validate_date(date_string):
     except ValueError:
         return False
 
+def is_empty(value):
+    return not value
+
+def change_background(img, img_back, zoom_size, center):
+    # 缩放
+    img = cv2.resize(img, zoom_size)
+    rows, cols, channels = img.shape
+
+    # 转换hsv
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # 获取mask
+    # lower_blue = np.array([78, 43, 46])
+    # upper_blue = np.array([110, 255, 255])
+    diff = [5, 30, 30]
+    gb = hsv[0, 0]
+    lower_blue = numpy.array(gb - diff)
+    upper_blue = numpy.array(gb + diff)
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+    # cv2.imshow('Mask', mask)
+
+    erode = cv2.erode(mask, None, iterations=1)
+    dilate = cv2.dilate(erode, None, iterations=1)
+
+    # 粘贴
+    for i in range(rows):
+        for j in range(cols):
+            if dilate[i, j] == 0:  # 0代表黑色的点
+                img_back[center[0] + i, center[1] + j] = img[i, j]  # 此处替换颜色，为BGR通道
+
+    return img_back
+
 class numberGen:
     def show_ui(self, root):
         self.root = root
@@ -223,6 +262,8 @@ class numberGen:
 
         ttk.Button(root, text=u'生成', width=15, command=self.generatorAll).grid(row=20, column=0, padx=3, pady=3)
         ttk.Button(root, text=u'重置', width=15, command=self.resetAll).grid(row=20, column=1, padx=3, pady=3)
+        ttk.Button(root, text=u'身份证', width=15, command=self.generateIdCardImage).grid(row=20, column=2, padx=3, pady=3)
+        ttk.Button(root, text=u'营业执照', width=15, command=self.generateBusinessLicenseImage).grid(row=20, column=3, padx=3, pady=3)
 
     def create_buttons(self, root, row, gen_command, entry):
         ttk.Button(root, text='生成', command=gen_command).grid(row=row, column=2, padx=3, pady=3)
@@ -305,6 +346,7 @@ class numberGen:
             birth_date = self.birth_date_entry.get()
         else:
             birth_date = generate_random_date()
+            set_entry_value(self.birth_date_entry, birth_date)
         
         # 随机生成后三位顺序码
         sequence_code = generate_sequence_code(self.gender.get())
@@ -404,15 +446,17 @@ class numberGen:
 
     # 随机一组双色球号码(6个红球 1个蓝球)
     def random_lotto(self):
-        red_balls = random.sample(range(1, 34), 6)
-        red_balls.sort()
+        # red_balls = random.sample(range(1, 34), 6)
+        # red_balls.sort()
         
-        blue_ball = random.choice(range(1, 17))
+        # blue_ball = random.choice(range(1, 17))
         
-        red_balls_str = ' '.join(map(str, red_balls))
-        blue_ball_str = str(blue_ball)
+        # red_balls_str = ' '.join(map(str, red_balls))
+        # blue_ball_str = str(blue_ball)
 
-        self.lotto = '今日双色球百万大奖: ' + red_balls_str + ' ' + blue_ball_str
+        # self.lotto = '今日双色球百万大奖: ' + red_balls_str + ' ' + blue_ball_str
+        self.lotto_gen = lotto_generator.LottoGenerator()
+        self.lotto = self.lotto_gen.random_lotto()
 
     def random_boc_code(self): 
         bank_card_no = generate_bank_card('BOC')
@@ -460,6 +504,104 @@ class numberGen:
     def copy_to_clipboard(self, text):
         cp.copy(text)
         showinfo('成功', '复制成功')
+
+    def generateIdCardImage(self):
+        if is_empty(self.ename.get()) and is_empty(self.gender.get()) and is_empty(self.birth_date_entry.get()) and is_empty(self.eidn.get()) :
+            showinfo('错误', '请先生成数据')
+            return
+        
+        # self.loading_bar = loading_alert.LoadingBar(title="提示", content="图片正在生成...")
+        # self.loading_bar.show(self.root)
+
+        # 开启新线程保持滚动条显示
+        wait_thread = threading.Thread(target=self.handle_image)
+        wait_thread.setDaemon(True)
+        wait_thread.start()
+
+    def handle_image(self):
+        if self.gender.get() == 1 :
+            avatar = PImage.open(os.path.join(base_dir, 'pengyy.jpeg'))  # 500x670
+        else :
+            avatar = PImage.open(os.path.join(base_dir, 'liuyf.jpg')) 
+
+        empty_image = PImage.open(os.path.join(base_dir, 'empty.png'))
+
+        name_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 72)
+        other_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 64)
+        birth_date_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/fzhei.ttf'), 60)
+        id_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/ocrb10bt.ttf'), 90)
+
+        draw = ImageDraw.Draw(empty_image)
+        draw.text((630, 690), self.ename.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((630, 840), '男' if self.gender.get() == 1 else '女', fill=(0, 0, 0), font=other_font)
+        draw.text((1030, 840), '汉', fill=(0, 0, 0), font=other_font)
+        draw.text((630, 975), self.birth_date_entry.get()[:4], fill=(0, 0, 0), font=birth_date_font)
+        draw.text((950, 975), self.birth_date_entry.get()[4:6], fill=(0, 0, 0), font=birth_date_font)
+        draw.text((1150, 975), self.birth_date_entry.get()[6:], fill=(0, 0, 0), font=birth_date_font)
+
+        # 住址
+        addr_loc_y = 1115
+        # addr_lines = self.get_addr_lines()
+        # for addr_line in addr_lines:
+        draw.text((630, addr_loc_y), '河南省郑州市金水区', fill=(0, 0, 0), font=other_font)
+            # addr_loc_y += 100
+
+        # 身份证号
+        draw.text((900, 1475), self.eidn.get(), fill=(0, 0, 0), font=id_font)
+
+        # 背面
+        draw.text((1050, 2750), '金水区公安局', fill=(0, 0, 0), font=other_font)
+        draw.text((1050, 2895), '2020.10.01-2030.10.01', fill=(0, 0, 0), font=other_font)
+
+        self.eBgvar = tk.IntVar()
+        self.eBgvar.set(1)
+        if self.eBgvar.get():
+            avatar = cv2.cvtColor(numpy.asarray(avatar), cv2.COLOR_RGBA2BGRA)
+            empty_image = cv2.cvtColor(numpy.asarray(empty_image), cv2.COLOR_RGBA2BGRA)
+            empty_image = change_background(avatar, empty_image, (500, 670), (690, 1500))
+            empty_image = PImage.fromarray(cv2.cvtColor(empty_image, cv2.COLOR_BGRA2RGBA))
+        else:
+            avatar = avatar.resize((500, 670))
+            avatar = avatar.convert('RGBA')
+            empty_image.paste(avatar, (1500, 690), mask=avatar)
+            # im = paste(avatar, im, (500, 670), (690, 1500))
+
+        filename = f'{self.ename.get()}.png'
+
+        empty_image.save(filename)
+
+        # self.loading_bar.close()
+        showinfo('成功', f'文件已生成: {filename}')
+
+    def generateBusinessLicenseImage(self):
+        if is_empty(self.ecreditcode.get()) and is_empty(self.ecompanyname.get()) and is_empty(self.ename.get()) :
+            showinfo('错误', '请先生成数据')
+            return
+
+        # self.loading_bar = loading_alert.LoadingBar(title="提示", content="图片正在生成...")
+        # self.loading_bar.show(self.root)
+
+        # 开启新线程保持滚动条显示
+        wait_thread = threading.Thread(target=self.handle_business_image)
+        wait_thread.setDaemon(True)
+        wait_thread.start()
+
+    def handle_business_image(self):
+        empty_image = PImage.open(os.path.join(base_dir, 'business_license.png'))
+
+        name_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 55)
+
+        draw = ImageDraw.Draw(empty_image)
+        draw.text((400, 700), self.ecreditcode.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((700, 1045), self.ecompanyname.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((700, 1230), self.ename.get(), fill=(0, 0, 0), font=name_font)
+
+        filename = f'{self.ecompanyname.get()}.png'
+
+        empty_image.save(filename)
+
+        # self.loading_bar.close()
+        showinfo('成功', f'文件已生成: {filename}')
 
     def run(self):
         root = tk.Tk()
