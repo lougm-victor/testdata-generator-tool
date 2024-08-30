@@ -37,13 +37,13 @@ def generate_random_date(start_year=1960, end_year=2020):
     delta = end_date - start_date
     random_days = random.randint(0, delta.days)
     random_date = start_date + timedelta(days=random_days)
-    
+
     return random_date.strftime("%Y%m%d")
 
 def calculate_checksum(id_number):
     factorArr = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2, 1]
     parityBit = ["1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2"]
-    
+
     intweightSum = sum(int(id_number[i]) * factorArr[i] for i in range(17))
     intCheckDigit = parityBit[intweightSum % 11]
 
@@ -55,11 +55,11 @@ def calculate_check_digit(code):
     ws = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28]
     # 字符映射
     str_chars = "0123456789ABCDEFGHJKLMNPQRTUWXY"
-    
+
     # 验证代码长度
     if len(code) != 17:
         raise ValueError("Input code must be 17 characters long")
-    
+
     # 确保所有字符在映射表中
     for char in code:
         if char not in str_chars:
@@ -74,7 +74,7 @@ def calculate_check_digit(code):
         check_digit = '0'
     else:
         check_digit = str_chars[check_digit_num]
-    
+
     return check_digit
 
 def calculate_org_code_check_digit(org_code):
@@ -82,10 +82,10 @@ def calculate_org_code_check_digit(org_code):
     ws = [3, 7, 9, 10, 5, 8, 4, 2]
     # 字符映射
     str_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    
+
     # 计算加权和
     sum_val = sum(str_chars.index(char) * ws[i] for i, char in enumerate(org_code[:8]))
-    
+
     # 计算校验码
     check_digit_num = 11 - (sum_val % 11)
     if check_digit_num == 11:
@@ -94,9 +94,9 @@ def calculate_org_code_check_digit(org_code):
         check_digit = 'X'
     else:
         check_digit = str(check_digit_num)
-    
+
     return check_digit
-    
+
 def generate_org_code():
     chars = "0123456789ABCDEFGHJKLMNPQRTUWXY"
     org_code = ''.join(random.choice(chars) for _ in range(8))
@@ -107,8 +107,8 @@ def generate_org_code():
 def generate_bank_card(bank_type):
     # 中国银行
     boc_prefix_list = [
-        "621660", "621661", "621663", "621667", 
-        "621668", "621666", "621256", "621212", 
+        "621660", "621661", "621663", "621667",
+        "621668", "621666", "621256", "621212",
         "621283", "621725"
     ]
 
@@ -124,7 +124,7 @@ def generate_bank_card(bank_type):
     icbc_prefix_list = [
         '620200', '620302', '622200', '955880'
     ]
-    
+
     # 邮储银行
     psbc_prefix_list = [
         '622150', '622151', '622181', '622188'
@@ -142,27 +142,27 @@ def generate_bank_card(bank_type):
         prefix_list = psbc_prefix_list
     else:
         prefix_list = ['666666']
-    
+
     prefix = random.choice(prefix_list)
     suffix = ''.join(random.choices("0123456789", k=13))
-    
+
     # 拼接为19位银行卡号
     bank_card_number = prefix + suffix
-    
+
     return bank_card_number
 
 # 根据性别随机生成三位顺序码
 def generate_sequence_code(gender):
     while True:
         sequence_code = random.randint(100, 999)
-        
+
         if gender == 1:
             if sequence_code % 2 != 0:
                 break
         else:
             if sequence_code % 2 == 0:
                 break
-    
+
     return str(sequence_code)
 
 # 验证输入的日期字符串格式是否正确
@@ -219,7 +219,7 @@ class numberGen:
 
         self.entries = []
 
-        self.gender = IntVar()        
+        self.gender = IntVar()
         tk.Label(root, text="性别：").grid(row=1, column=0, sticky='W', padx=3, pady=3)
         tk.Radiobutton(root, text="男", variable=self.gender, value=1).grid(row=1, column=1, padx=3, pady=3)
         tk.Radiobutton(root, text="女", variable=self.gender, value=0).grid(row=1, column=2, padx=3, pady=3)
@@ -332,7 +332,7 @@ class numberGen:
         prefix = random.choice(prefixes)
         remaining_digits = ''.join(random.choices("0123456789", k=9))
         phone_number = prefix + remaining_digits
-        
+
         set_entry_value(self.ephone, phone_number)
 
     # 身份证号码
@@ -340,26 +340,26 @@ class numberGen:
         # 随机选择一个省级地区码
         lines = read_file("/areaCode.txt")
         region_code = random.choice(lines)
-        
+
         # 随机生成一个有效的出生日期
         if (validate_date(self.birth_date_entry.get())):
             birth_date = self.birth_date_entry.get()
         else:
             birth_date = generate_random_date()
             set_entry_value(self.birth_date_entry, birth_date)
-        
+
         # 随机生成后三位顺序码
         sequence_code = generate_sequence_code(self.gender.get())
-        
+
         # 拼接前17位
         id_number_17 = region_code + birth_date + sequence_code
-        
+
         # 计算校验码
         checksum = calculate_checksum(id_number_17)
-        
+
         # 生成完整的身份证号
         id_number = id_number_17 + checksum
-        
+
         set_entry_value(self.eidn, id_number)
 
     # 公司名称
@@ -374,14 +374,14 @@ class numberGen:
             '万', '宝', '恒', '安', '康', '达', '广', '合', '通', '捷', '航', '顺', '瑞', '荣', '欣', '佳'
         ]
         company_name = ''.join(random.choice(characters) for _ in range(6)) + '公司'
-        
+
         set_entry_value(self.ecompanyname, company_name)
 
     # 统一社会信用代码
     def random_credit_code(self):
         # 随机选择登记管理部门代码
         management_code = random.choice(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'N', 'Y'])
-        
+
         # 随机选择机构类别代码
         department_code = {
             '1': '1',
@@ -398,19 +398,19 @@ class numberGen:
             'Y': '1'
         }
         institution_code = department_code[management_code]
-        
+
         # 读取行政区划码，这里假设我们已经有了行政区划码列表
         lines = read_file("/areaCode.txt")
         administrative_code = random.choice(lines)
-        
+
         # 生成组织机构代码
         self.organization_code = generate_org_code()
-        
+
         # 生成校验码
         usc_code = management_code + institution_code + administrative_code + self.organization_code.replace("-", "")
 
         check_digit = calculate_check_digit(usc_code)
-        
+
         # 返回完整的统一社会信用代码
         set_entry_value(self.ecreditcode, usc_code + check_digit)
 
@@ -441,16 +441,16 @@ class numberGen:
 
         # 将校验位拼接到前14位生成完整的中征码
         code = f"{residue:02d}"  # 校验位确保两位
-        
+
         set_entry_value(self.epbccode, id_code + code)
 
     # 随机一组双色球号码(6个红球 1个蓝球)
     def random_lotto(self):
         # red_balls = random.sample(range(1, 34), 6)
         # red_balls.sort()
-        
+
         # blue_ball = random.choice(range(1, 17))
-        
+
         # red_balls_str = ' '.join(map(str, red_balls))
         # blue_ball_str = str(blue_ball)
 
@@ -458,22 +458,22 @@ class numberGen:
         self.lotto_gen = lotto_generator.LottoGenerator()
         self.lotto = self.lotto_gen.random_lotto()
 
-    def random_boc_code(self): 
+    def random_boc_code(self):
         bank_card_no = generate_bank_card('BOC')
 
         set_entry_value(self.boccode, bank_card_no)
 
-    def random_ccb_code(self): 
+    def random_ccb_code(self):
         bank_card_no = generate_bank_card('CCB')
 
         set_entry_value(self.ccbcode, bank_card_no)
 
-    def random_abc_code(self): 
+    def random_abc_code(self):
         bank_card_no = generate_bank_card('ABC')
 
         set_entry_value(self.abccode, bank_card_no)
-    
-    def random_icbc_code(self): 
+
+    def random_icbc_code(self):
         bank_card_no = generate_bank_card('ICBC')
 
         set_entry_value(self.icbccode, bank_card_no)
@@ -509,7 +509,7 @@ class numberGen:
         if is_empty(self.ename.get()) and is_empty(self.gender.get()) and is_empty(self.birth_date_entry.get()) and is_empty(self.eidn.get()) :
             showinfo('错误', '请先生成数据')
             return
-        
+
         # self.loading_bar = loading_alert.LoadingBar(title="提示", content="图片正在生成...")
         # self.loading_bar.show(self.root)
 
@@ -522,48 +522,49 @@ class numberGen:
         if self.gender.get() == 1 :
             avatar = PImage.open(os.path.join(base_dir, 'pengyy.jpeg'))  # 500x670
         else :
-            avatar = PImage.open(os.path.join(base_dir, 'liuyf.jpg')) 
+            avatar = PImage.open(os.path.join(base_dir, 'liuyf.jpg'))
 
         empty_image = PImage.open(os.path.join(base_dir, 'empty.png'))
+        empty_image = empty_image.convert("RGB")
 
-        name_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 72)
-        other_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 64)
-        birth_date_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/fzhei.ttf'), 60)
-        id_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/ocrb10bt.ttf'), 90)
+        name_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 24)
+        other_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 24)
+        birth_date_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/fzhei.ttf'), 24)
+        id_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/ocrb10bt.ttf'), 24)
 
         draw = ImageDraw.Draw(empty_image)
-        draw.text((630, 690), self.ename.get(), fill=(0, 0, 0), font=name_font)
-        draw.text((630, 840), '男' if self.gender.get() == 1 else '女', fill=(0, 0, 0), font=other_font)
-        draw.text((1030, 840), '汉', fill=(0, 0, 0), font=other_font)
-        draw.text((630, 975), self.birth_date_entry.get()[:4], fill=(0, 0, 0), font=birth_date_font)
-        draw.text((950, 975), self.birth_date_entry.get()[4:6], fill=(0, 0, 0), font=birth_date_font)
-        draw.text((1150, 975), self.birth_date_entry.get()[6:], fill=(0, 0, 0), font=birth_date_font)
+        draw.text((260, 290), self.ename.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((260, 345), '男' if self.gender.get() == 1 else '女', fill=(0, 0, 0), font=other_font)
+        draw.text((420, 345), '汉', fill=(0, 0, 0), font=other_font)
+        draw.text((260, 400), self.birth_date_entry.get()[:4], fill=(0, 0, 0), font=birth_date_font)
+        draw.text((390, 400), self.birth_date_entry.get()[4:6], fill=(0, 0, 0), font=birth_date_font)
+        draw.text((470, 400), self.birth_date_entry.get()[6:], fill=(0, 0, 0), font=birth_date_font)
 
         # 住址
-        addr_loc_y = 1115
+        addr_loc_y = 460
         # addr_lines = self.get_addr_lines()
         # for addr_line in addr_lines:
-        draw.text((630, addr_loc_y), '河南省郑州市金水区', fill=(0, 0, 0), font=other_font)
-            # addr_loc_y += 100
+        draw.text((260, addr_loc_y), '河南省郑州市金水区', fill=(0, 0, 0), font=other_font)
+        # addr_loc_y += 100
 
         # 身份证号
-        draw.text((900, 1475), self.eidn.get(), fill=(0, 0, 0), font=id_font)
+        draw.text((350, 610), self.eidn.get(), fill=(0, 0, 0), font=id_font)
 
         # 背面
-        draw.text((1050, 2750), '金水区公安局', fill=(0, 0, 0), font=other_font)
-        draw.text((1050, 2895), '2020.10.01-2030.10.01', fill=(0, 0, 0), font=other_font)
+        draw.text((440, 1130), '金水区公安局', fill=(0, 0, 0), font=other_font)
+        draw.text((440, 1187), '2020.10.01-2030.10.01', fill=(0, 0, 0), font=other_font)
 
         self.eBgvar = tk.IntVar()
-        self.eBgvar.set(1)
+        self.eBgvar.set(0)
         if self.eBgvar.get():
             avatar = cv2.cvtColor(numpy.asarray(avatar), cv2.COLOR_RGBA2BGRA)
             empty_image = cv2.cvtColor(numpy.asarray(empty_image), cv2.COLOR_RGBA2BGRA)
-            empty_image = change_background(avatar, empty_image, (500, 670), (690, 1500))
+            # empty_image = change_background(avatar, empty_image, (500, 670), (690, 1500))
             empty_image = PImage.fromarray(cv2.cvtColor(empty_image, cv2.COLOR_BGRA2RGBA))
         else:
-            avatar = avatar.resize((500, 670))
+            avatar = avatar.resize((180, 250))
             avatar = avatar.convert('RGBA')
-            empty_image.paste(avatar, (1500, 690), mask=avatar)
+            empty_image.paste(avatar, (620, 290), mask=avatar)
             # im = paste(avatar, im, (500, 670), (690, 1500))
 
         filename = f'{self.ename.get()}.png'
@@ -588,13 +589,14 @@ class numberGen:
 
     def handle_business_image(self):
         empty_image = PImage.open(os.path.join(base_dir, 'business_license.png'))
+        empty_image = empty_image.convert("RGB")
 
-        name_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 55)
+        name_font = ImageFont.truetype(os.path.join(base_dir, 'fonts/hei.ttf'), 24)
 
         draw = ImageDraw.Draw(empty_image)
-        draw.text((400, 700), self.ecreditcode.get(), fill=(0, 0, 0), font=name_font)
-        draw.text((700, 1045), self.ecompanyname.get(), fill=(0, 0, 0), font=name_font)
-        draw.text((700, 1230), self.ename.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((180, 310), self.ecreditcode.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((313, 468), self.ecompanyname.get(), fill=(0, 0, 0), font=name_font)
+        draw.text((315, 552), self.ename.get(), fill=(0, 0, 0), font=name_font)
 
         filename = f'{self.ecompanyname.get()}.png'
 
